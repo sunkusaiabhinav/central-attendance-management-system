@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: attendance_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: nanobanana
+      POSTGRES_DB: attendance_db
+    ports:
+      - "5433:5432" # Exposed on 5433 on host to avoid conflict with any host postgres on 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d attendance_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: attendance_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:nanobanana@db:5432/attendance_db
+      JWT_SECRET_KEY: dev-secret-key-change-in-production-must-be-32-chars-minimum
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      COMPANY_TIMEZONE: Asia/Kolkata
+      MIN_OFFICE_DAYS_PER_WEEK: 3
+      MIN_WEEKLY_WORKING_HOURS: 15
+      MIN_AVERAGE_HOURS_PER_DAY: 5
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      EMAIL_MOCK_MODE: ${EMAIL_MOCK_MODE:-true}
+      ATTENDANCE_EVALUATION_DAY: monday
+      ATTENDANCE_EVALUATION_TIME: "09:00"
+
+volumes:
+  postgres_data:
