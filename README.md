@@ -146,6 +146,12 @@ python -m pytest --cov=app -v
 
 # Run code style and linter checks
 python -m ruff check .
+
+# Run static application security testing (Bandit)
+python -m bandit -r app/
+
+# Scan dependencies for known vulnerabilities (pip-audit)
+python -m pip_audit -r requirements.txt
 ```
 
 ---
@@ -154,9 +160,12 @@ python -m ruff check .
 
 The included CI workflow (`.github/workflows/ci.yml`) automatically executes on every `push` and `pull_request` targeting `main`:
 
-1. **Linting Job**: Validates codebase against Ruff linter rules.
-2. **Test Suite Job**: Runs all 55 test cases with SQLite in-memory and mock email mode.
-3. **Docker Build Job**: Verifies that the Docker container builds without errors.
+1. **Test & Lint Job**: Validates codebase against Ruff linter rules and runs all 55 Pytest test cases using isolated in-memory SQLite and mock email delivery.
+2. **Security & Vulnerability Scan Job**:
+   - **Bandit (SAST)**: Identifies insecure Python code patterns, injection vectors, and cryptographic issues.
+   - **pip-audit**: Cross-checks all dependencies against the PyPA advisory database for known CVEs.
+   - **Gitleaks**: Scans git history to prevent exposed secrets and credentials from leaking into production.
+3. **Docker Build Job**: Verifies that the container image builds without errors.
 
 ---
 
